@@ -9,8 +9,10 @@ For any questions, please contact the team.
 ## The Team
 
 Developer: Beatriz Costa Gomes (@mooniean)
+
 Collaborator: Nuno Nobre (@nmnobre)
-Beta testers: Andre Voelzmann
+
+Beta testers: Andre Voelzmann (@avmann)
 
 ## Software Version
 Currently still not a public version, so 0.0.1

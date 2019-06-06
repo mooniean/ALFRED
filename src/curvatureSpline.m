@@ -65,21 +65,14 @@ for b=1:length(boundaries)
     ppX = csaps( t, x.', p);
     ppY = csaps( t, y.', p);
     
-    coeffvaluesX=ppX.coefs;
-    coeffvaluesY=ppY.coefs;
+    xt{b}=@(t) fnval(ppX,t);
+    yt{b}=@(t) fnval(ppY,t);
     
-    xt{b}=@(t) coeffvaluesX(floor(t),1).*(t-floor(t)).^3+coeffvaluesX(floor(t),2).*(t-floor(t)).^2+...
-        coeffvaluesX(floor(t),3).*(t-floor(t))+coeffvaluesX(floor(t),4);
-    yt{b}=@(t) coeffvaluesY(floor(t),1).*(t-floor(t)).^3+coeffvaluesY(floor(t),2).*(t-floor(t)).^2+...
-        coeffvaluesY(floor(t),3).*(t-floor(t))+coeffvaluesY(floor(t),4);
+    dxdt=@(t) fnval(fnder(ppX),t);
+    dydt=@(t) fnval(fnder(ppY),t);
     
-    dxdt=@(t) 3*coeffvaluesX(floor(t),1).*(t-floor(t)).^2+2*coeffvaluesX(floor(t),2).*(t-floor(t))+...
-        coeffvaluesX(floor(t),3);
-    dydt=@(t) 3*coeffvaluesY(floor(t),1).*(t-floor(t)).^2+2*coeffvaluesY(floor(t),2).*(t-floor(t))+...
-        coeffvaluesY(floor(t),3);
-    
-    d2xdt2=@(t) 6*coeffvaluesX(floor(t),1).*(t-floor(t))+2*coeffvaluesX(floor(t),2);
-    d2ydt2=@(t) 6*coeffvaluesY(floor(t),1).*(t-floor(t))+2*coeffvaluesY(floor(t),2);
+    d2xdt2=@(t) fnval(fnder(fnder(ppX)),t);
+    d2ydt2=@(t) fnval(fnder(fnder(ppY)),t);
     
     dTdt{b}=@(t) (dydt(t).*d2xdt2(t)-d2ydt2(t).*dxdt(t))./(dxdt(t).^2+dydt(t).^2);
     dsdt{b}=@(t) sqrt(dxdt(t).^2+dydt(t).^2);

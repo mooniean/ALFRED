@@ -9,14 +9,17 @@ function state = skeletonOverlap(boxA,boxB,skelA,skelB)
 
 state=false;
 
-
+'inside skeleton overlap'
 % newImage = zeros(max(boxA(3)+boxA(1),boxB(3)+boxB(1)),max(boxA(4)+boxA(2),boxB(4)+boxB(2)));
 newImage = zeros(max(boxA(4)+boxA(2),boxB(4)+boxB(2)),max(boxA(3)+boxA(1),boxB(3)+boxB(1)));
 
 % coordx=boxA(1)-min(boxA(3),boxB(3));
 % coordy=boxA(2)-min(boxA(4),boxB(4));
-coordx=boxA(1)-min(boxA(1),boxB(1));
-coordy=boxA(2)-min(boxA(2),boxB(2));
+% coordx=boxA(1)-min(boxA(1),boxB(1));
+% coordy=boxA(2)-min(boxA(2),boxB(2));
+
+coordx=boxA(2)-min(boxA(2),boxB(2));
+coordy=boxA(1)-min(boxA(1),boxB(1));
 for i=1:size(skelA,1)
     if max(skelA(i,:))<1
         continue
@@ -33,8 +36,12 @@ end
 % coordx=boxB(1)-min(boxA(3),boxB(3));
 % coordy=boxB(2)-min(boxA(4),boxB(4));
 
-coordx=boxB(1)-min(boxA(1),boxB(1));
-coordy=boxB(2)-min(boxA(2),boxB(2));
+% coordx=boxB(1)-min(boxA(1),boxB(1));
+% coordy=boxB(2)-min(boxA(2),boxB(2));
+
+coordx=boxB(2)-min(boxA(2),boxB(2));
+coordy=boxB(1)-min(boxA(1),boxB(1));
+
 for i=1:size(skelB,1)
     if max(skelB(i,:))<1
         continue
@@ -48,7 +55,6 @@ for i=1:size(skelB,1)
         end
     end
 end
-
 
 
 end

@@ -609,44 +609,44 @@ if string(saveAnswer(1))=="Yes"
     for i = 1:size(imagesWithDisorganisation,1)
         try
             waitbar(i/size(imagesWithDisorganisation,1),f,sprintf('Image %1d of %1d',i,size(imagesWithDisorganisation,1)))
-            [~,indexImages] = findValue(handles.finalROIs,imagesWithDisorganisation(i,:));
-            [~,numAxon] = findValue(handles.finalROIs(indexImages),'Axon');
-            [~,numMT] = findValue(handles.finalROIs(indexImages),'MT disorganisation');
+            [~,indexImages,~] = findValue(handles.finalROIs,imagesWithDisorganisation(i,:));
+            [~,numAxon,~] = findValue(handles.finalROIs(indexImages),'Axon');
+            [~,numMT,~] = findValue(handles.finalROIs(indexImages),'MT disorganisation');
             % This gives me a matrix with the overlap of the
             % disorganisation with the axons. Rows: axon, Columns: MTs
             ratios = zeros(numel(numAxon),numel(numMT));
-            'entering the cycles'
+%             'entering the cycles'
             for j = 1:numel(numAxon)
-                
                 for k = 1:numel(numMT)
-                    'calculating bbox overlap'
+%                     'calculating bbox overlap'
                     ratios(j,k)=bboxOverlapRatio(handles.finalROIs(numAxon(j)).box,handles.finalROIs(numMT(k)).box,'Min');
                     if ratios(j,k)<0.05
                         ratios(j,k)=0;
                         continue
                     end
-                    'checking skeleton overlap'
+%                     'checking skeleton overlap'
                     if ~skeletonOverlap(handles.finalROIs(numAxon(j)).box,handles.finalROIs(numMT(k)).box,handles.finalROIs(numAxon(j)).skel,handles.finalROIs(numMT(k)).skel) %if skeleton overlap is 0
                         ratios(j,k)=0;
                     end
+%                     'left skeleton overlap'
                 end
             end
-            'before'
+%             'before'
             [~,indexes] = max(ratios); %gives me the max ratio per disorganisation (column)
             uniqueIndex = unique(indexes);
             for j = 1:numel(uniqueIndex)
-                'calculating mdi'
+%                 'calculating mdi'
                 
                 disorgIndex = find(indexes==uniqueIndex(j));
                 finalAreaMT = 0;
-                for k = 1:sum(disorgIndex)
-                    finalAreaMT = finalAreaMT+handles.finalROIs(numMT(k)).areaMT; % tirar o +1 e por + disorg(index).perimeter
+                for k = 1:numel(disorgIndex)
+                    finalAreaMT = finalAreaMT+handles.finalROIs(numMT(disorgIndex(k))).areaMT; % tirar o +1 e por + disorg(index).perimeter
                 end
                 % MDI = perimeterMT/length(axon)
                 handles.finalROIs(numAxon(j)).MDI = finalAreaMT/handles.finalROIs(numAxon(j)).length;
             end
         catch
-            'I DIED'
+%             'I DIED'
             continue
         end
         
@@ -681,7 +681,7 @@ if string(saveAnswer(1))=="Yes"
         end
     end
     
-    csvname = [finalName '.csv'];
+%     csvname = [finalName '.csv'];
     
     % cellROIs = struct2cell(handles.finalROIs);
     i=2; % Index for what the user wants
@@ -729,7 +729,7 @@ if string(saveAnswer(1))=="Yes"
     %or if you want the field names:
     %         xlswrite(xlsname, [fieldnames(finalResults), c]);
     
-    struct2csv(finalResults,csvname);
+%     struct2csv(finalResults,csvname);
     
     msgbox('The requested files have been saved.', 'Saved');
     

@@ -377,6 +377,33 @@ function previousButton_Callback(hObject, ~, handles)
 %Go to previous image, plot the already selected bounding boxes
 handles.currentImage = handles.currentImage - 1;
 handles.image = handles.imageGroup{handles.currentImage};
+% handles.oldImage = handles.image;
+
+% Inverse image: should be an independent function but goddamn matlab
+% has the handles that ruin everything.
+if get(handles.inverseImage,'Value')
+    handles.oldImage = handles.image;
+    for i = 1:size(handles.image,3)
+        handles.image(:,:,i) = imcomplement(handles.image(:,:,i));
+    end
+    
+else
+    handles.image = handles.oldImage;
+end
+
+try
+    imshow(handles.image(:,:,handles.channelChoice));
+catch
+    if size(handles.image,3)>3
+        imshow(handles.image(:,:,1));
+        text(0,100,'Channel 1','Color','white');
+        handles.oldImage = handles.image(:,:,1);
+    else
+        imshow(handles.image)
+%         handles.oldImage = handles.image;
+    end
+end
+
 
 handles.channelNumber = size(handles.image,3);
 channelOpt = ['All' newline num2str(linspace(1,handles.channelNumber, handles.channelNumber),'%d\n')];
@@ -425,6 +452,31 @@ function continuebutton_Callback(hObject, ~, handles)
 %is. If there isn't, then you can only calculate all.
 handles.currentImage = handles.currentImage + 1;
 handles.image = handles.imageGroup{handles.currentImage};
+
+% Inverse image: should be an independent function but goddamn matlab
+% has the handles that ruin everything.
+if get(handles.inverseImage,'Value')
+    handles.oldImage = handles.image;
+    for i = 1:size(handles.image,3)
+        handles.image(:,:,i) = imcomplement(handles.image(:,:,i));
+    end
+    
+else
+    handles.image = handles.oldImage;
+end
+
+try
+    imshow(handles.image(:,:,handles.channelChoice));
+catch
+    if size(handles.image,3)>3
+        imshow(handles.image(:,:,1));
+        text(0,100,'Channel 1','Color','white');
+        handles.oldImage = handles.image(:,:,1);
+    else
+        imshow(handles.image)
+%         handles.oldImage = handles.image;
+    end
+end
 
 handles.channelNumber = size(handles.image,3);
 channelOpt = ['All' newline num2str(linspace(1,handles.channelNumber, handles.channelNumber),'%d\n')];
@@ -976,6 +1028,7 @@ function inverseImage_Callback(hObject, ~, handles)
 % Complements the image (basically if it's black on white it becomes white
 % on black).
 if get(hObject,'Value')
+%     'hey'
     handles.oldImage = handles.image;
     for i = 1:size(handles.image,3)
         handles.image(:,:,i) = imcomplement(handles.image(:,:,i));

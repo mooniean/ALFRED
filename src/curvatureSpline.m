@@ -1,4 +1,4 @@
-function [dTdt, dsdt, xt, yt, dsdT] = curvatureSpline(coordX,coordY,p)
+function [dTdt, dsdt, xt, yt, N, dsdT] = curvatureSpline(coordX,coordY,tol)
 
 %build a binary image out of the coordinates
 offset=20; %zero-pad image so I have like a frame around it
@@ -26,20 +26,24 @@ skeleton=bwareaopen(skeleton,10);
 %find boundaries for objects not holes (better performance)
 % boundaries=bwboundaries(skeleton,'noholes');
 boundaries=bwboundaries(skeleton);
+lenBoundaries=length(boundaries);
 
 %storage for x(t) and y(t), where the curvature computation is valid
-xt=cell(length(boundaries),1);
-yt=cell(length(boundaries),1);
+xt=cell(lenBoundaries,1);
+yt=cell(lenBoundaries,1);
 
 %storage for derivatives of T (the curve's tangent vector) and s (the curve
 %'s arc length) for each boundary
-dTdt=cell(length(boundaries),1);
-dsdt=cell(length(boundaries),1);
+dTdt=cell(lenBoundaries,1);
+dsdt=cell(lenBoundaries,1);
 
 %storage for radius at t
-dsdT = cell(length(boundaries),1);
+dsdT = cell(lenBoundaries,1);
 
-for b=1:length(boundaries)
+%storage for parametrization length
+N = cell(lenBoundaries,1);
+
+for b=1:lenBoundaries
     
     x=boundaries{b}(:,1).';y=boundaries{b}(:,2).';
     
@@ -57,13 +61,13 @@ for b=1:length(boundaries)
     end
     
     %t is the parameter in relation to which the curve is parametrized xD
-    t=(1:length(x)).';
+    L=length(x); N{b}=L; t=1:L;
     
     %here we use a smoothing spline to compute the first and second
     %derivatives, x'(t) x''(t) and y'(t) y''(t), of the parametrizations, x(t) and y(t)
     
-    ppX = csaps( t, x.', p);
-    ppY = csaps( t, y.', p);
+    ppX = spaps( t, x, tol*L);
+    ppY = spaps( t, y, tol*L);
     
     xt{b}=@(t) fnval(ppX,t);
     yt{b}=@(t) fnval(ppY,t);
@@ -77,5 +81,5 @@ for b=1:length(boundaries)
     dTdt{b}=@(t) (dydt(t).*d2xdt2(t)-d2ydt2(t).*dxdt(t))./(dxdt(t).^2+dydt(t).^2);
     dsdt{b}=@(t) sqrt(dxdt(t).^2+dydt(t).^2);
     
-    dsdT{b}=@(t) dsdt(t)./abs(dTdt(t));
+    dsdT{b}=@(t) dsdt{b}(t)./abs(dTdt{b}(t));
 end

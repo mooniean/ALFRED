@@ -2,19 +2,18 @@ clc; clear; close all;
 figure('Units','normalized','OuterPosition',[0 0 1 1]);
 offset=20;
 
-% Logarithmic Spiral parameters
+% ellipse's axes parameters
 
-a=3;
-b=.1;
+a=400;
+b=200;
 
-% analytic expressions for the spiral parameterization
+% analytic expressions for the ellipse parameterization
 
-rt = @(t) a*exp(b*t);
-xt = @(t) rt(t).*cos(t);
-yt = @(t) rt(t).*sin(t);
+xt = @(t) a.*cos(t);
+yt = @(t) b.*sin(t);
 
 % "analytic" mean radius
-tMax=14*pi;
+tMax=2*pi;
 
 dxdt=matlabFunction(diff(sym(xt),1));
 d2xdt2=matlabFunction(diff(sym(xt),2));
@@ -30,11 +29,12 @@ analyticalRadius=integral(dldtk,0,tMax)/integral(dldt,0,tMax)
 radiusDensity=matlabFunction(sym(dldt)/diff(sym(k),1)*...
     sym(k)^2/integral(dldt,0,tMax));
 
+
 %%%%%----------%%%%%
 
 % fp-precision digitization
 
-dtP=1e-3; tP=0:dtP:tMax; % the spacing affects what's the right p... with 1e-5 you should use p=0.(9) - some nines...
+dtP=1e-3; tP=0:dtP:tMax;
 xP=xt(tP);
 yP=yt(tP);
 rP=1./k(tP);
@@ -57,7 +57,7 @@ end
 subplot(141)
 imagesc(analyticSkel); daspect([1 1 1]); colormap(gca,'jet')
 h=colorbar('southoutside'); h.TickLabels=num2str(10.^(h.Ticks.'),'%.2f');
-title(['[1] Logarithmic spiral: a = ',int2str(a),', b = ',num2str(b)]);
+title(['[1] Ellipse: a = ',int2str(a),', b = ',num2str(b)]);
 cMin=min(min(analyticSkel));cMax=max(max(analyticSkel));
 
 %%%%%----------%%%%%
@@ -103,7 +103,7 @@ splineAnalyticSkel=zeros(size(analyticSkel));
 
 colorX=round(xS-minxS)+1+offset/2;
 colorY=round(yS-minyS)+1+offset/2;
-for i=1:length(xS)  
+for i=1:length(xS)
     splineAnalyticSkel(colorX(i)-1:colorX(i)+1,colorY(i)-1:colorY(i)+1)=...
         log10(rS(i));
 end
@@ -130,14 +130,14 @@ skeleton=bwmorph(skeleton,'skel','Inf');
 [x,y]=find(skeleton);
 
 % % give this to Fourier fit function
-% 
+%
 % [~, ~, fourierRadius] = curvatureFourier(x,y,0);
-% 
+%
 % % give this to Gaussian convolution function
-% 
+%
 % sigma=18;
 % [dTdt, dsdt, xt, yt, ~] = curvatureGauss(x,y,sigma);
-% 
+%
 % dt=1;
 % xt=round(xt{1});
 % yt=round(yt{1});
@@ -199,22 +199,22 @@ title(['[3] Smoothing spline of the pixel-digitized curve: tol = ',num2str(tol),
     '. Segments: ',int2str(sections)])
 
 subplot(144),cla
-yLim=0.35;xlabel('Radius (px)'),ylabel('Relative frequency');
+yLim=0.3;xlabel('Radius (px)'),ylabel('Relative frequency');
 
 % setup histogram
-binWidth=15;nBins=round((a*exp(b*tMax)*sqrt(1+b^2)-a*sqrt(1+b^2))/binWidth);
-binWidth=(a*exp(b*tMax)*sqrt(1+b^2)-a*sqrt(1+b^2))/nBins;
-meanGaussRadii(meanGaussRadii>a*exp(b*tMax)*sqrt(1+b^2))=a*exp(b*tMax)*sqrt(1+b^2); % cheating: everything to the right of last bin, goes to the last bin
-meanGaussRadii(meanGaussRadii<a*sqrt(1+b^2))=a*sqrt(1+b^2); % cheating: everything to the left of first bin, goes to the first bin
-H=histogram(meanGaussRadii,a*sqrt(1+b^2):binWidth:a*exp(b*tMax)*sqrt(1+b^2),'Normalization','probability');
+binWidth=45;nBins=round((a^2/b-b^2/a)/binWidth);
+binWidth=(a^2/b-b^2/a)/nBins;
+meanGaussRadii(meanGaussRadii>a^2/b)=a^2/b; % cheating: everything to the right of last bin, goes to the last bin
+meanGaussRadii(meanGaussRadii<b^2/a)=b^2/a; % cheating: everything to the left of first bin, goes to the first bin
+H=histogram(meanGaussRadii,b^2/a:binWidth:a^2/b,'Normalization','probability');
 
 % start plotting auxiliary data
-hold on; line([a*sqrt(1+b^2) a*sqrt(1+b^2)],[0 yLim],'Color','r');
-line([a*exp(b*tMax)*sqrt(1+b^2) a*exp(b*tMax)*sqrt(1+b^2)],[0 yLim],'Color','r');
-plot(dldt(tP(2:end-1))./kdldt(tP(2:end-1)),abs(radiusDensity(tP(2:end-1)))*binWidth,'Linewidth',11);
+hold on; line([a^2/b a^2/b],[0 yLim],'Color','r');
+line([b^2/a b^2/a],[0 yLim],'Color','r');
+plot(dldt(tP(2:end-1))./kdldt(tP(2:end-1)),abs(radiusDensity(tP(2:end-1)))*binWidth*4,'Linewidth',4);
 line([analyticalRadius analyticalRadius],[0 yLim],'Color','k');
 
-plot(dldtP(tS)./kdldtP(tS),abs(radiusDensitySpline(tS))*binWidth,'.');
+plot(dldtP(tS)./kdldtP(tS),abs(radiusDensitySpline(tS))*binWidth*4,'.');
 
 line([meanGaussRadius meanGaussRadius],[0 yLim],'Color','g');
 %line([fourierRadius fourierRadius],[0 yLim],'Color','b');
@@ -245,5 +245,5 @@ legend(plots([6:-1:1,7]),...
     'Spine probability density (\times binWidth) [2]',...
     'Spline radius (average) [3]','Spline section radius [3]',...%'Fourier radius'
     })
-xlim([0,250]);ylim([0 yLim]);
+xlim([80,820]);ylim([0 yLim]);
 %if p>.9; gif(['lSpiral_Spline_',int2str(sections),'.gif'],'frame',gcf,'DelayTime',2); else; gif; end

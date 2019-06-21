@@ -65,7 +65,7 @@ for alphad=0%:10:90
     sigma=25;
     [dTdt, dsdt, xt, yt, ~] = curvatureGauss(x,y,sigma);
     
-    %small hack jut for this case (periodic conditions)
+    %small hack just for this case (periodic conditions)
     copyPoint=floor((length(xt{1})-4*sigma)/2)+1;
     copyRange=copyPoint:copyPoint+2*sigma-1;
     boundaries=bwboundaries(skeleton);

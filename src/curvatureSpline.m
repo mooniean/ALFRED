@@ -69,6 +69,9 @@ for b=1:lenBoundaries
     ppX = spaps( t, x, tol*L);
     ppY = spaps( t, y, tol*L);
     
+    %ppX = csaps( t(1:25:end), x(1:25:end), 1);
+    %ppY = csaps( t(1:25:end), y(1:25:end), 1);
+    
     xt{b}=@(t) fnval(ppX,t);
     yt{b}=@(t) fnval(ppY,t);
     

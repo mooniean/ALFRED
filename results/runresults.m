@@ -240,3 +240,30 @@ end
 % finalName = [finalName '.mat'];
 % finalROIs = tempROIs;
 % save(finalName,'finalROIs'); % Saves everything into a file that can be opened later
+
+
+%% Run straightlines
+
+roiIndex = 3;
+straightLines = tempROIs(roiIndex).straightlines;
+sizeStraightLines = length(straightLines);
+distances=[];
+segmentNumber = 1;
+distanceIndex = 1;
+i=1;
+while i<=sizeStraightLines
+    try
+    if (straightLines(i).rho == straightLines(i+1).rho) && (straightLines(i).theta == straightLines(i+1).theta)
+        distances = [distances tempROIs(roiIndex).straightlineDistances(i)+tempROIs(roiIndex).straightlineDistances(i+1)];
+        i=i+1;
+    else
+        distances = [distances tempROIs(roiIndex).straightlineDistances(i)];
+    end
+    catch
+        distances = [distances tempROIs(roiIndex).straightlineDistances(i)];
+    end
+    i=i+1;
+end
+
+straightnessRatio = sum(distances)/tempROIs(roiIndex).length*100;
+numberSegments = length(distances);

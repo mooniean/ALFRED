@@ -244,7 +244,37 @@ end
 
 %% Run straightlines
 
-roiIndex = 3;
+roiIndices = [2 3 4 5 6 7 8 10];
+
+for roiIndex=roiIndices
+    roiIndex
+straightLines = tempROIs(roiIndex).straightlines;
+sizeStraightLines = length(straightLines);
+distances=[];
+segmentNumber = 1;
+distanceIndex = 1;
+i=1;
+while i<=sizeStraightLines
+    try
+    if (straightLines(i).rho == straightLines(i+1).rho) && (straightLines(i).theta == straightLines(i+1).theta)
+        distances = [distances tempROIs(roiIndex).straightlineDistances(i)+tempROIs(roiIndex).straightlineDistances(i+1)];
+        i=i+1;
+    else
+        distances = [distances tempROIs(roiIndex).straightlineDistances(i)];
+    end
+    catch
+        distances = [distances tempROIs(roiIndex).straightlineDistances(i)];
+    end
+    i=i+1;
+end
+totallength =tempROIs(roiIndex).length
+straightnessRatio = sum(distances)/totallength*100
+numberSegments = length(distances)
+end
+
+%% Run straightlines for disorganisation
+
+roiIndex = 11;
 straightLines = tempROIs(roiIndex).straightlines;
 sizeStraightLines = length(straightLines);
 distances=[];
@@ -265,5 +295,7 @@ while i<=sizeStraightLines
     i=i+1;
 end
 
-straightnessRatio = sum(distances)/tempROIs(roiIndex).length*100;
-numberSegments = length(distances);
+straightnessRatio = sum(distances)/sum(sum(tempROIs(roiIndex).skel))*100
+sum(sum(tempROIs(roiIndex).skel))
+% straightnessRatio = sum(tempROIs(roiIndex).straightlineDistances)/sum(sum(tempROIs(roiIndex).skel))*100
+numberSegments = length(distances)

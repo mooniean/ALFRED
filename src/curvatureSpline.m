@@ -1,27 +1,4 @@
-function [dTdt, dsdt, xt, yt, N, dsdT] = curvatureSpline(coordX,coordY,tol)
-
-%build a binary image out of the coordinates
-offset=20; %zero-pad image so I have like a frame around it
-skeleton = zeros(max(coordX)+offset,max(coordY)+offset);
-for i = 1:length(coordX)
-    skeleton(coordX(i)+offset/2,coordY(i)+offset/2) = 1;
-end
-
-%find branchpoints
-brPoints=bwmorph(skeleton,'branchpoints');
-
-%eliminate branchpoints and their 24 nearest neighbours from the skeleton
-[rowBr,colBr] = find(brPoints);
-for k=1:length(rowBr)
-    for i=-2:2
-        for j=-2:2
-            skeleton(rowBr(k)+i,colBr(k)+j)=0;
-        end
-    end
-end
-
-%clean groups of up to 10 pixels that are isolated in the skeleton
-skeleton=bwareaopen(skeleton,10);
+function [dTdt, dsdt, xt, yt, N, dsdT] = curvatureSpline(skeleton,tol)
 
 %find boundaries for objects not holes (better performance)
 % boundaries=bwboundaries(skeleton,'noholes');
@@ -64,13 +41,9 @@ for b=1:lenBoundaries
     L=length(x); N{b}=L; t=1:L;
     
     %here we use a smoothing spline to compute the first and second
-    %derivatives, x'(t) x''(t) and y'(t) y''(t), of the parametrizations, x(t) and y(t)
-    
+    %derivatives, x'(t) x''(t) and y'(t) y''(t), of the parametrizations, x(t) and y(t)    
     ppX = spaps( t, x, tol*L);
     ppY = spaps( t, y, tol*L);
-    
-    %ppX = csaps( t(1:25:end), x(1:25:end), 1);
-    %ppY = csaps( t(1:25:end), y(1:25:end), 1);
     
     xt{b}=@(t) fnval(ppX,t);
     yt{b}=@(t) fnval(ppY,t);

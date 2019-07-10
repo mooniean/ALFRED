@@ -1,20 +1,24 @@
-clc; clear; close all;
+clc; close all;
 figure('Units','normalized','OuterPosition',[0 0 1 1]);
 offset=20;
 
 % Logarithmic Spiral parameters
 
-a=3;
+a=.5;
 b=.1;
+alpha=0*pi/180;
 
 % analytic expressions for the spiral parameterization
 
 rt = @(t) a*exp(b*t);
-xt = @(t) rt(t).*cos(t);
-yt = @(t) rt(t).*sin(t);
+xtU = @(t) rt(t).*cos(t);
+ytU = @(t) rt(t).*sin(t);
+
+xt = @(t) xtU(t)*cos(alpha)-ytU(t)*sin(alpha);
+yt = @(t) xtU(t)*sin(alpha)+ytU(t)*cos(alpha);
 
 % "analytic" mean radius
-tMin=8*pi; tMax=14*pi;
+tMin=10*pi; tMax=14*pi;
 
 dxdt=matlabFunction(diff(sym(xt),1));
 d2xdt2=matlabFunction(diff(sym(xt),2));
@@ -34,7 +38,8 @@ radiusDensity=matlabFunction(sym(dldt)/diff(sym(k),1)*...
 
 % fp-precision digitization
 
-dtP=1e-3; tP=tMin:dtP:tMax; % the spacing affects what's the right p... with 1e-5 you should use p=0.(9) - some nines...
+dtP=1e-3; tP=tMin:dtP:tMax;
+tP1=linspace(tMin,tMax,75);
 xP=xt(tP);
 yP=yt(tP);
 rP=1./k(tP);
@@ -57,7 +62,7 @@ end
 subplot(141)
 imagesc(analyticSkel); daspect([1 1 1]); colormap(gca,'jet')
 h=colorbar('southoutside'); h.TickLabels=num2str(10.^(h.Ticks.'),'%.2f');
-title({'[1] Logarithmic spiral:',['a = ',int2str(a),', b = ',num2str(b),...
+title({'[1] Logarithmic spiral:',['a = ',num2str(a),', b = ',num2str(b),...
     ', ',num2str(tMin/pi),'\pi \leq \theta \leq ',num2str(tMax/pi),'\pi']});
 cMin=min(min(analyticSkel));cMax=max(max(analyticSkel));
 
@@ -95,8 +100,8 @@ xS=xtP(tS);
 yS=ytP(tS);
 rS=1./kP(tS);
 
-errX=sqrt(mean((xP-xS).^2))
-errY=sqrt(mean((yP-yS).^2))
+%errX=sqrt(mean((xP-xS).^2))
+%errY=sqrt(mean((yP-yS).^2))
 
 minxS=min(xS);
 minyS=min(yS);
@@ -118,17 +123,26 @@ title({'[2] Smoothing spline of the analytic curve:',['p = ',num2str(p)]});
 %%%%%----------%%%%%
 
 % pixel-precision digitization
+f=1000;
+xD=round(f*(xP-min(xP)+1));sqrt(sum((xD-(xP-min(xP))-1).^2)/length(xD))
+yD=round(f*(yP-min(yP)+1));sqrt(sum((yD-(yP-min(yP))-1).^2)/length(yD))
 
-xD=round(xP-min(xP))+1;sqrt(sum((xD-(xP-min(xP))-1).^2)/length(xD))
-yD=round(yP-min(yP))+1;sqrt(sum((yD-(yP-min(yP))-1).^2)/length(yD))
+% skeleton = zeros(max(xD),max(yD));
+% for i = 1:length(xD)
+%     skeleton(xD(i),yD(i)) = 1;
+% end
+% 
+% skeleton=bwmorph(skeleton,'skel','Inf');
+% [x,y]=find(skeleton);
+% 
+% % in terms of the original parametrization
+% [~,in]=ismember([x,y],[xD.',yD.'],'rows');
+% [tD,in]=sort(tP(in));
+% x=x(in);y=y(in);
 
-skeleton = zeros(max(xD),max(yD));
-for i = 1:length(xD)
-    skeleton(xD(i),yD(i)) = 1;
-end
-
-skeleton=bwmorph(skeleton,'skel','Inf');
-[x,y]=find(skeleton);
+tD=tP;
+x=xD.';
+y=yD.';
 
 % % give this to Fourier fit function
 %
@@ -143,26 +157,40 @@ skeleton=bwmorph(skeleton,'skel','Inf');
 % xt=round(xt{1});
 % yt=round(yt{1});
 
-% give this to Spline fit function
+% give this to Spline fit function (imported here, because I would have to mess up the function way too much)
 
-%p=2e-5; I'm using a predefined tolerance for now, I can perhaps allow the
+%I'm using a predefined tolerance for now, I can perhaps allow the
 %caller to set it... we'll see
-tol=.25;
-[dTdt, dsdt, xt, yt, N, dsdT] = curvatureSpline(x,y,tol);
-%errX=sqrt(mean((x-xt{1}(t)).^2))
-%errY=sqrt(mean((y-yt{1}(t)).^2))
+tol=0;knots=600;
+N=length(x); t=1:N; L=N; selector=round(linspace(1,N,knots));
+ppX = spaps( t(selector), x(selector)/f, tol*L);
+ppY = spaps( t(selector), y(selector)/f, tol*L);
 
-dt=dtP;t=20:dt:N{1}-20; % cheating: completely empirical
-dTdt=dTdt{1}(t);
-dsdt=dsdt{1}(t);
-xt=round(xt{1}(t));
-yt=round(yt{1}(t));
-dsdT=dsdT{1}(t);
+xtR=@(t) fnval(ppX,t);
+ytR=@(t) fnval(ppY,t);
+
+dxdtR=@(t) fnval(fnder(ppX),t);
+dydtR=@(t) fnval(fnder(ppY),t);
+
+d2xdt2R=@(t) fnval(fnder(fnder(ppX)),t);
+d2ydt2R=@(t) fnval(fnder(fnder(ppY)),t);
+
+kdldtR=@(t) abs(dydtR(t).*d2xdt2R(t)-d2ydt2R(t).*dxdtR(t))./(dxdtR(t).^2+dydtR(t).^2);
+dldtR=@(t) sqrt(dxdtR(t).^2+dydtR(t).^2);
+kR = @(t) kdldtR(t)./dldtR(t);
+dldtkR = @(t) dldtR(t)./kR(t);
+
+dt=dtP;t=20:dt:N-20; % cheating: completely empirical
+dTdt=kdldtR(t);
+dsdt=dldtR(t);%dsdt=dldt(tP);
+xt=round(xtR(t));%xt=round(xP-minxP)+10;
+yt=round(ytR(t));%yt=round(yP-minyP)+10;
+dsdT=1./kR(t);%dsdT=rP;
 
 %%%%%----------%%%%%
 
 % colorize curvature on the logarithmic spiral per constant-length-sector
-sections=350;
+sections=450; % try 35, 75, 350, 450, 750 with step=80
 
 circumference=dt*trapz(dsdt);
 secLen=circumference/sections;
@@ -185,9 +213,9 @@ for i=1:sections
     actualSectionLens(i)=dt*trapz(dsdt(breakpoints(i):breakpoints(i+1)));
     for j=breakpoints(i):breakpoints(i+1)-1
         colorX=xt(j);colorY=yt(j);
-        coloredSkeleton(colorX-1:colorX+1,colorY-1:colorY+1)=log10(abs(meanEstimatedRadii(i)));
+        coloredSkeleton(offset/2+(colorX-1:colorX+1),offset/2+(colorY-1:colorY+1))=log10(abs(meanEstimatedRadii(i)));
         if mod(j-1+19/dt,25/dt)==0
-            coloredSkeleton(colorX-3:colorX+3,colorY-3:colorY+3)=1;
+            %coloredSkeleton(colorX-3:colorX+3,colorY-3:colorY+3)=1;
         end
     end
 end
@@ -205,19 +233,25 @@ title({'[3] Smoothing spline of the pixel-digitized curve:',['Error tol. = ',num
     ', segments: ',int2str(sections)]})
 
 subplot(144),cla
-yLim=0.35;xlabel('Radius (px)'),ylabel('Relative frequency');
+xlabel('Radius (px)'),ylabel('Relative frequency');
 
 % setup histogram
-binWidth=15;nBins=round((a*exp(b*tMax)*sqrt(1+b^2)-a*exp(b*tMin)*sqrt(1+b^2))/binWidth);
-binWidth=(a*exp(b*tMax)*sqrt(1+b^2)-a*exp(b*tMin)*sqrt(1+b^2))/nBins;
-meanEstimatedRadii(meanEstimatedRadii>a*exp(b*tMax)*sqrt(1+b^2))=a*exp(b*tMax)*sqrt(1+b^2); % cheating: everything to the right of last bin, goes to the last bin
-meanEstimatedRadii(meanEstimatedRadii<a*exp(b*tMin)*sqrt(1+b^2))=a*exp(b*tMin)*sqrt(1+b^2); % cheating: everything to the left of first bin, goes to the first bin
-H=histogram(meanEstimatedRadii,a*exp(b*tMin)*sqrt(1+b^2):binWidth:a*exp(b*tMax)*sqrt(1+b^2),'Normalization','probability');
+rMinT=a*exp(b*tMin)*sqrt(1+b^2);
+rMaxT=a*exp(b*tMax)*sqrt(1+b^2);
+rMinE=a*exp(b*min(tD))*sqrt(1+b^2);
+rMaxE=a*exp(b*max(tD))*sqrt(1+b^2);
+
+nBins=10;
+binWidth=(rMaxE-rMinE)/nBins;
+%meanEstimatedRadii(meanEstimatedRadii>rMaxE)=rMaxE; % cheating: everything to the right of last bin, goes to the last bin
+%meanEstimatedRadii(meanEstimatedRadii<rMinE)=rMinE; % cheating: everything to the left of first bin, goes to the first bin
+H=histogram(meanEstimatedRadii,rMinE:binWidth:rMaxE,'Normalization','probability');
 
 % start plotting auxiliary data
-hold on; line([a*exp(b*tMin)*sqrt(1+b^2) a*exp(b*tMin)*sqrt(1+b^2)],[0 yLim],'Color','r');
-line([a*exp(b*tMax)*sqrt(1+b^2) a*exp(b*tMax)*sqrt(1+b^2)],[0 yLim],'Color','r');
-plot(dldt(tP(2:end-1))./kdldt(tP(2:end-1)),abs(radiusDensity(tP(2:end-1)))*binWidth,'Linewidth',11);
+yLim=2*max(H.Values);
+hold on; line([rMinT rMinT],[0 yLim],'Color','r');
+line([rMaxT rMaxT],[0 yLim],'Color','r');
+plot(dldt(tP(2:end-1))./kdldt(tP(2:end-1)),abs(radiusDensity(tP(2:end-1)))*binWidth,'Linewidth',13);
 line([analyticalRadius analyticalRadius],[0 yLim],'Color','k');
 
 plot(dldtP(tS)./kdldtP(tS),abs(radiusDensitySpline(tS))*binWidth,'.');
@@ -231,10 +265,10 @@ line([meanEstimatedRadius meanEstimatedRadius],[0 yLim],'Color','g');
 
 barPlot=zeros(1,nBins);
 for i=1:length(meanEstimatedRadii)
-    if (ceil((meanEstimatedRadii(i)-a*sqrt(1+b^2))/binWidth)>nBins); barPlot(nBins)=barPlot(nBins)+actualSectionLens(i)/circumference; continue; end
-    if (ceil((meanEstimatedRadii(i)-a*sqrt(1+b^2))/binWidth)<1); barPlot(1)=barPlot(1)+actualSectionLens(i)/circumference; continue; end
-    barPlot(ceil((meanEstimatedRadii(i)-a*sqrt(1+b^2))/binWidth))=...
-        barPlot(ceil((meanEstimatedRadii(i)-a*sqrt(1+b^2))/binWidth))+...
+    if ((meanEstimatedRadii(i)-rMinE)/binWidth>nBins); barPlot(nBins)=barPlot(nBins)+actualSectionLens(i)/circumference; continue; end
+    if ((meanEstimatedRadii(i)-rMinE)/binWidth<1); barPlot(1)=barPlot(1)+actualSectionLens(i)/circumference; continue; end
+    barPlot(ceil((meanEstimatedRadii(i)-rMinE)/binWidth))=...
+        barPlot(ceil((meanEstimatedRadii(i)-rMinE)/binWidth))+...
         actualSectionLens(i)/circumference;
 end
 
@@ -250,5 +284,5 @@ legend(plots([6:-1:1,7]),...
     'Spine probability density (\times binWidth) [2]',...
     ['Spline radius (average) [3] (',num2str(err,'%.2f'),'%)'],'Spline section radius [3]',...%'Fourier radius'
     })
-xlim([a*exp(b*tMin)*sqrt(1+b^2)-20 a*exp(b*tMax)*sqrt(1+b^2)+20]);ylim([0 yLim]);
-%if p>.9; gif(['lSpiral_Spline_',int2str(sections),'.gif'],'frame',gcf,'DelayTime',2); else; gif; end
+xlim([rMinT-0.1*(rMaxT-rMinT) rMaxT+0.1*(rMaxT-rMinT)]);ylim([0 yLim]);
+if f>0; gif(['lSpiral_Spline_',int2str(f),'_',num2str(knots),'.gif'],'frame',gcf,'DelayTime',2); else; gif; end

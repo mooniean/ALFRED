@@ -1,4 +1,4 @@
-clc; clearvars -except f radiusRMS; close all;
+clc; clearvars -except f fVec radiusRMS; close all;
 figure('Units','normalized','OuterPosition',[0 0 1 1]);
 offset=20;
 
@@ -122,7 +122,7 @@ title({'[2] Smoothing spline of the analytic curve:',['p = ',num2str(p)]});
 %%%%%----------%%%%%
 
 % pixel-precision digitization 
-nKnots=150; knots=zeros(1,nKnots);
+nKnots=600; knots=zeros(1,nKnots);
 knots(1)=tMin; knots(end)=tMax;
 deltaL=(l(tMax)-l(tMin))/(nKnots-1);
 

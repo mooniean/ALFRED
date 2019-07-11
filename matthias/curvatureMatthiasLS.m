@@ -1,16 +1,16 @@
-clc; close all;
+clc; clearvars -except f radiusRMS; close all;
 figure('Units','normalized','OuterPosition',[0 0 1 1]);
 offset=20;
 
 % Logarithmic Spiral parameters
 
-a=.5;
+a=3;
 b=.1;
 alpha=0*pi/180;
 
 % analytic expressions for the spiral parameterization
 
-rt = @(t) a*exp(b*t);
+rt =  @(t) a*exp(b*t);
 xtU = @(t) rt(t).*cos(t);
 ytU = @(t) rt(t).*sin(t);
 
@@ -18,7 +18,7 @@ xt = @(t) xtU(t)*cos(alpha)-ytU(t)*sin(alpha);
 yt = @(t) xtU(t)*sin(alpha)+ytU(t)*cos(alpha);
 
 % "analytic" mean radius
-tMin=10*pi; tMax=14*pi;
+tMin=8*pi; tMax=14*pi;
 
 dxdt=matlabFunction(diff(sym(xt),1));
 d2xdt2=matlabFunction(diff(sym(xt),2));
@@ -27,6 +27,7 @@ d2ydt2=matlabFunction(diff(sym(yt),2));
 
 kdldt= @(t) abs(dxdt(t).*d2ydt2(t)-dydt(t).*d2xdt2(t))./(dxdt(t).^2+dydt(t).^2);
 dldt = @(t) sqrt(dxdt(t).^2+dydt(t).^2);
+l = @(t) rt(t)*sqrt(1+b^2)/b;
 k = @(t) kdldt(t)./dldt(t);
 dldtk = @(t) dldt(t)./k(t);
 
@@ -103,12 +104,10 @@ rS=1./kP(tS);
 %errX=sqrt(mean((xP-xS).^2))
 %errY=sqrt(mean((yP-yS).^2))
 
-minxS=min(xS);
-minyS=min(yS);
 splineAnalyticSkel=zeros(size(analyticSkel));
 
-colorX=round(xS-minxS)+1+offset/2;
-colorY=round(yS-minyS)+1+offset/2;
+colorX=round(xS-minxP)+1+offset/2;
+colorY=round(yS-minyP)+1+offset/2;
 for i=1:length(xS)
     splineAnalyticSkel(colorX(i)-1:colorX(i)+1,colorY(i)-1:colorY(i)+1)=...
         log10(rS(i));
@@ -122,49 +121,29 @@ title({'[2] Smoothing spline of the analytic curve:',['p = ',num2str(p)]});
 
 %%%%%----------%%%%%
 
-% pixel-precision digitization
-f=1000;
-xD=round(f*(xP-min(xP)+1));sqrt(sum((xD-(xP-min(xP))-1).^2)/length(xD))
-yD=round(f*(yP-min(yP)+1));sqrt(sum((yD-(yP-min(yP))-1).^2)/length(yD))
+% pixel-precision digitization 
+nKnots=150; knots=zeros(1,nKnots);
+knots(1)=tMin; knots(end)=tMax;
+deltaL=(l(tMax)-l(tMin))/(nKnots-1);
 
-% skeleton = zeros(max(xD),max(yD));
-% for i = 1:length(xD)
-%     skeleton(xD(i),yD(i)) = 1;
-% end
-% 
-% skeleton=bwmorph(skeleton,'skel','Inf');
-% [x,y]=find(skeleton);
-% 
-% % in terms of the original parametrization
-% [~,in]=ismember([x,y],[xD.',yD.'],'rows');
-% [tD,in]=sort(tP(in));
-% x=x(in);y=y(in);
+for i=1:nKnots-2; knots(i+1)=fzero(@(t) l(t)-l(tMin)-deltaL*i,tMin); end
 
-tD=tP;
+%f=1e4; %resolution increase factor
+xD=round(f*(xt(knots)-minxP+1));  rms(xD-(xt(knots)-minxP)-1)
+yD=round(f*(yt(knots)-minyP+1));  rms(yD-(yt(knots)-minyP)-1)
+
 x=xD.';
 y=yD.';
-
-% % give this to Fourier fit function
-%
-% [~, ~, fourierRadius] = curvatureFourier(x,y,0);
-%
-% % give this to Gaussian convolution function
-%
-% sigma=18;
-% [dTdt, dsdt, xt, yt, ~] = curvatureGauss(x,y,sigma);
-%n
-% dt=1;
-% xt=round(xt{1});
-% yt=round(yt{1});
+tD=knots;
 
 % give this to Spline fit function (imported here, because I would have to mess up the function way too much)
 
 %I'm using a predefined tolerance for now, I can perhaps allow the
 %caller to set it... we'll see
-tol=0;knots=600;
-N=length(x); t=1:N; L=N; selector=round(linspace(1,N,knots));
-ppX = spaps( t(selector), x(selector)/f, tol*L);
-ppY = spaps( t(selector), y(selector)/f, tol*L);
+tol=0;
+L=nKnots; N=L; t=1:N;
+ppX = spaps( t, x/f, tol*L);
+ppY = spaps( t, y/f, tol*L);
 
 xtR=@(t) fnval(ppX,t);
 ytR=@(t) fnval(ppY,t);
@@ -180,12 +159,14 @@ dldtR=@(t) sqrt(dxdtR(t).^2+dydtR(t).^2);
 kR = @(t) kdldtR(t)./dldtR(t);
 dldtkR = @(t) dldtR(t)./kR(t);
 
-dt=dtP;t=20:dt:N-20; % cheating: completely empirical
+dt=dtP;t=2:dt:N-1; % cheating: completely empirical; not so much now, just taking out the first and last splines
 dTdt=kdldtR(t);
 dsdt=dldtR(t);%dsdt=dldt(tP);
 xt=round(xtR(t));%xt=round(xP-minxP)+10;
 yt=round(ytR(t));%yt=round(yP-minyP)+10;
 dsdT=1./kR(t);%dsdT=rP;
+
+radiusRMS(end+1)=rms(1./kR(2:N-1)-1./k(knots(2:N-1)))
 
 %%%%%----------%%%%%
 
@@ -285,4 +266,4 @@ legend(plots([6:-1:1,7]),...
     ['Spline radius (average) [3] (',num2str(err,'%.2f'),'%)'],'Spline section radius [3]',...%'Fourier radius'
     })
 xlim([rMinT-0.1*(rMaxT-rMinT) rMaxT+0.1*(rMaxT-rMinT)]);ylim([0 yLim]);
-if f>0; gif(['lSpiral_Spline_',int2str(f),'_',num2str(knots),'.gif'],'frame',gcf,'DelayTime',2); else; gif; end
+%if f>0; gif(['lSpiral_Spline_',int2str(f),'_',num2str(nKnots),'.gif'],'frame',gcf,'DelayTime',2); else; gif; end

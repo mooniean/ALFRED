@@ -1,4 +1,4 @@
-function [dTdt, dsdt, xt, yt, N, dsdT] = curvatureSpline(skeleton,tol)
+function [N, xt, yt, dsdT, dsdt, dTdt] = curvatureSpline(skeleton,tol)
 
 %find boundaries for objects not holes (better performance)
 % boundaries=bwboundaries(skeleton,'noholes');

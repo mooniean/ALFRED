@@ -1,5 +1,6 @@
-clc; clearvars -except f fVec radiusRMS; close all;
-figure('Units','normalized','OuterPosition',[0 0 1 1]);
+clc; clearvars -except f fVec nKnots nKnotsVec nKnotsEffVec tol tolVec alpha alphaVec alphaD alphaDVec radiusRMS coloredSkeletonStack MINX MINY M;
+%close all; figure('Units','normalized','OuterPosition',[0 0 1 1]);
+figure(2);
 offset=20;
 
 % Logarithmic Spiral parameters
@@ -121,27 +122,58 @@ title({'[2] Smoothing spline of the analytic curve:',['p = ',num2str(p)]});
 
 %%%%%----------%%%%%
 
-% pixel-precision digitization 
-nKnots=600; knots=zeros(1,nKnots);
+% pixel-precision digitization
+nKnots=length(tP);
+knots=zeros(1,nKnots);
 knots(1)=tMin; knots(end)=tMax;
 deltaL=(l(tMax)-l(tMin))/(nKnots-1);
 
-for i=1:nKnots-2; knots(i+1)=fzero(@(t) l(t)-l(tMin)-deltaL*i,tMin); end
+if nKnots==length(tP)
+    knots=tP;
+else
+    for i=1:nKnots-2; knots(i+1)=fzero(@(t) l(t)-l(tMin)-deltaL*i,tMin); end
+end
 
-%f=1e4; %resolution increase factor
+f=1e0; %resolution increase factor
 xD=round(f*(xt(knots)-minxP+1));  rms(xD-(xt(knots)-minxP)-1)
 yD=round(f*(yt(knots)-minyP+1));  rms(yD-(yt(knots)-minyP)-1)
 
-x=xD.';
-y=yD.';
-tD=knots;
+[~,in]=unique([xD.',yD.'],'rows','stable'); %keep in mind that this is not quite the same as a one-pixel wide path...
+
+x=xD(in).';
+y=yD(in).';
+tD=knots(in);
+
+if f==1
+    skeleton = zeros(max(x),max(y));
+    for i = 1:length(x)
+        skeleton(x(i),y(i)) = 1;
+    end
+    
+    skeleton=bwmorph(skeleton,'skel','Inf');
+    [xD,yD]=find(skeleton);
+    
+    % in terms of the original parametrization
+	[~,in]=ismember([xD,yD],[x,y],'rows');
+	[tD,in]=sort(tD(in));
+	x=xD(in);y=yD(in);
+end
+
+nKnotsEff=length(in)
+
+% rotate pixelated image
+
+%alphaD=90*pi/180;
+xyA=round([cos(alphaD) -sin(alphaD); sin(alphaD) cos(alphaD)]*[x.';y.']);
+%[xyA,in]=unique(xyA.','stable','rows');tD=tD(in);nKnotsEff=length(in)
+x=xyA(1,:);y=xyA(2,:);
 
 % give this to Spline fit function (imported here, because I would have to mess up the function way too much)
 
 %I'm using a predefined tolerance for now, I can perhaps allow the
 %caller to set it... we'll see
-tol=0;
-L=nKnots; N=L; t=1:N;
+tol=10^-.7;
+L=nKnotsEff; N=L; t=1:N;
 ppX = spaps( t, x/f, tol*L);
 ppY = spaps( t, y/f, tol*L);
 
@@ -166,7 +198,11 @@ xt=round(xtR(t));%xt=round(xP-minxP)+10;
 yt=round(ytR(t));%yt=round(yP-minyP)+10;
 dsdT=1./kR(t);%dsdT=rP;
 
-radiusRMS(end+1)=rms(1./kR(2:N-1)-1./k(knots(2:N-1)))
+THL=fzero(@(t) l(t)-l(tMin)-(l(tMax)-l(tMin))/(49-1)*1,tMin);
+THH=fzero(@(t) l(t)-l(tMin)-(l(tMax)-l(tMin))/(49-1)*(49-2),tMin);
+mask=(tD>=THL-eps & tD<=THH+eps);selector=1:N;selector=selector(mask);
+%radiusRMS(end+1)=rms(1./kR(selector)-1./k(tD(selector)))
+return;
 
 %%%%%----------%%%%%
 
@@ -217,15 +253,15 @@ subplot(144),cla
 xlabel('Radius (px)'),ylabel('Relative frequency');
 
 % setup histogram
-rMinT=a*exp(b*tMin)*sqrt(1+b^2);
-rMaxT=a*exp(b*tMax)*sqrt(1+b^2);
-rMinE=a*exp(b*min(tD))*sqrt(1+b^2);
-rMaxE=a*exp(b*max(tD))*sqrt(1+b^2);
+rMinT=rt(tMin)*sqrt(1+b^2);
+rMaxT=rt(tMax)*sqrt(1+b^2);
+rMinE=rt(min(tD))*sqrt(1+b^2);
+rMaxE=rt(max(tD))*sqrt(1+b^2);
 
 nBins=10;
 binWidth=(rMaxE-rMinE)/nBins;
-%meanEstimatedRadii(meanEstimatedRadii>rMaxE)=rMaxE; % cheating: everything to the right of last bin, goes to the last bin
-%meanEstimatedRadii(meanEstimatedRadii<rMinE)=rMinE; % cheating: everything to the left of first bin, goes to the first bin
+meanEstimatedRadii(meanEstimatedRadii>rMaxE)=rMaxE; % cheating: everything to the right of last bin, goes to the last bin
+meanEstimatedRadii(meanEstimatedRadii<rMinE)=rMinE; % cheating: everything to the left of first bin, goes to the first bin
 H=histogram(meanEstimatedRadii,rMinE:binWidth:rMaxE,'Normalization','probability');
 
 % start plotting auxiliary data

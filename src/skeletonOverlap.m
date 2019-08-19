@@ -9,7 +9,7 @@ function state = skeletonOverlap(boxA,boxB,skelA,skelB)
 
 state=false;
 
-'inside skeleton overlap'
+% 'inside skeleton overlap'
 % newImage = zeros(max(boxA(3)+boxA(1),boxB(3)+boxB(1)),max(boxA(4)+boxA(2),boxB(4)+boxB(2)));
 newImage = zeros(max(boxA(4)+boxA(2),boxB(4)+boxB(2)),max(boxA(3)+boxA(1),boxB(3)+boxB(1)));
 

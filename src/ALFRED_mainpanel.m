@@ -622,10 +622,14 @@ if string(saveAnswer(1))=="Yes"
                 
 %                 [~, ~, resultsFourier] = curvatureFourier(handles.finalROIs(indexMT(i)).regioncoordinates.x,handles.finalROIs(indexMT(i)).regioncoordinates.y);
 %                 [~, ~, resultsGauss] = curvatureGaussTuner(handles.finalROIs(indexMT(i)).regioncoordinates.x,handles.finalROIs(indexMT(i)).regioncoordinates.y);
+                skeleton = curvaturePreProcessing(handles.finalROIs(indexMT(i)).regioncoordinates.x,handles.finalROIs(indexMT(i)).regioncoordinates.y);
+                tol=0.2;
+                [N,~,~, radiusSpline, dsdt, ~] = curvatureSpline(skeleton,tol);
                 resultsFourier = [];
-                resultsGauss = [];
+%                 resultsSpline = [];
                 finalGeneralCurvatures{i} = 1./(resultsFourier.*handles.conversionFactor);
-                finalPointCurvatures{i} = 1./(resultsGauss.*handles.conversionFactor);
+                finalPointCurvatures{i} = 1./(radiusSpline{1}(1:1e-3:N{1}).*handles.conversionFactor);
+                assignin('base','newArcLength',dsdt{1}(1:1e-3:N{1}))
                 
                 if DEBUG; disp('after calculations'); end
                 %                 totalCurvatures = [totalCurvatures handles.imageCurvature]; %#ok<AGROW>

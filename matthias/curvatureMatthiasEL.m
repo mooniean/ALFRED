@@ -24,7 +24,7 @@ d2ydt2=matlabFunction(diff(sym(yt),2));
 
 kdldt= @(t) abs(dxdt(t).*d2ydt2(t)-dydt(t).*d2xdt2(t))./(dxdt(t).^2+dydt(t).^2);
 dldt = @(t) sqrt(dxdt(t).^2+dydt(t).^2);
-l = @(t) a*EI2(t,sqrt(1-(b/a)^2));
+l = @(t) b*EI2(t,sqrt(1-(a/b)^2));
 k = @(t) kdldt(t)./dldt(t);
 dldtk = @(t) dldt(t)./k(t);
 

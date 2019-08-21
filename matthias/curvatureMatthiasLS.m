@@ -230,10 +230,8 @@ for i=1:sections
     actualSectionLens(i)=dt*trapz(dsdt(breakpoints(i):breakpoints(i+1)));
     for j=breakpoints(i):breakpoints(i+1)-1
         colorX=xt(j);colorY=yt(j);
-        coloredSkeleton(offset/2+(colorX-1:colorX+1),offset/2+(colorY-1:colorY+1))=log10(abs(meanEstimatedRadii(i)));
-        if mod(j-1+19/dt,25/dt)==0
-            %coloredSkeleton(colorX-3:colorX+3,colorY-3:colorY+3)=1;
-        end
+        coloredSkeleton(offset/2+(colorX-1:colorX+1),offset/2+(colorY-1:colorY+1))=...
+            log10(abs(meanEstimatedRadii(i)));
     end
 end
 

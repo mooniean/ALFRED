@@ -91,7 +91,7 @@ radiusDensitySpline=@(t) (dldtP(t)./gradient(kP(t)).*kP(t).^2)...
 
 %%%%%----------%%%%%
 
-% spline of the fp-precison curve's skeleton
+% spline of the fp-precision curve's skeleton
 
 tS=tP;
 xS=xtP(tS);

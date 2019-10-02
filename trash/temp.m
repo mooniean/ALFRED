@@ -1,5 +1,3 @@
-%% Calculation Function
-function [handles] = calculationFunction(handles)
 %Calculate every region and save to a file
 global DEBUG;
 
@@ -8,30 +6,18 @@ finalName = ['results/' num2str(yyyymmdd(datetime)) '-' num2str(hour(datetime)) 
 
 if string(saveAnswer(1))=="Yes"
     
-    
-    % Dividing types of ROIs between Axons and Disorganisation
     typeROI = 'Axon';
     [~,indexAxon] = findValue(handles.finalROIs,typeROI);
     finalLengths = zeros(numel(indexAxon),1);
     
     typeROI = 'MT disorganisation';
     [~,indexMT] = findValue(handles.finalROIs,typeROI);
-    
-    % Variable initiation
     finalAreasDisorg = zeros(numel(indexMT),1);
     finalAreaMT =  zeros(numel(indexMT),1);
     finalDensity = zeros(numel(indexMT),1);
     finalEccentricity = zeros(numel(indexMT),1);
     finalGeneralCurvatures = struct([]);
     finalPointCurvatures = struct([]);
-    
-    % Retroadding the conversionFactor to all of the ROIs before
-    i = 1;
-    conversionFactor = handles.finalROIs(i).conversionFactor;
-    while isempty(conversionFactor)
-        conversionFactor = handles.finalROIs(i).conversionFactor;
-        i=i+1;
-    end
     
     %Calculations on axons:
     if indexAxon > 0
@@ -49,18 +35,16 @@ if string(saveAnswer(1))=="Yes"
     else
         finalLengths = 0;
     end
-    
     checkPrint(handles.figure1,handles)
     finalName = [finalName '.mat'];
-    tempROIs = handles.finalROIs;
+    tempROIs = handles.finalROIs; 
     save(finalName,'tempROIs'); % Saves everything into a file that can be opened later
-    
     % Add straightline distances/sizes to save also as another variable,
     % i'm not sure how but we don't need it now!
     
     %Calculations on MT disorganisation:
-    % NOTE: curvatures are calculated using two methods: the smoothing filter
-    % method (dependent on resolution but good for fine grained
+    % NOTE: curvatures are calculated using two methods: the Gaussian
+    % window method (dependent on resolution but good for fine grained
     % solutions), and the Fourier method, good for course grained
     % solutions and general curvature of the image.
     imagesWithDisorganisation = [];
@@ -118,16 +102,14 @@ if string(saveAnswer(1))=="Yes"
                 %                 handles.imageCurvature = handles.imageCurvature.*(handles.imageCurvature<0.2);
                 %                 handles.imageCurvature(handles.imageCurvature==0) = [];
                 
-                %                 [~, ~, resultsFourier] = curvatureFourier(handles.finalROIs(indexMT(i)).regioncoordinates.x,handles.finalROIs(indexMT(i)).regioncoordinates.y);
-                %                 [~, ~, resultsGauss] = curvatureGaussTuner(handles.finalROIs(indexMT(i)).regioncoordinates.x,handles.finalROIs(indexMT(i)).regioncoordinates.y);
-                
+%                 [~, ~, resultsFourier] = curvatureFourier(handles.finalROIs(indexMT(i)).regioncoordinates.x,handles.finalROIs(indexMT(i)).regioncoordinates.y);
+%                 [~, ~, resultsGauss] = curvatureGaussTuner(handles.finalROIs(indexMT(i)).regioncoordinates.x,handles.finalROIs(indexMT(i)).regioncoordinates.y);
                 skeleton = curvaturePreProcessing(handles.finalROIs(indexMT(i)).regioncoordinates.x,handles.finalROIs(indexMT(i)).regioncoordinates.y);
                 tol=0.2;
                 [N,~,~, radiusSpline, dsdt, ~] = curvatureSpline(skeleton,tol);
-                
-                %resultsFourier = [];
-                %                 resultsSpline = [];
-                %finalGeneralCurvatures{i} = 1./(resultsFourier.*handles.conversionFactor);
+                resultsFourier = [];
+%                 resultsSpline = [];
+                finalGeneralCurvatures{i} = 1./(resultsFourier.*handles.conversionFactor);
                 finalPointCurvatures{i} = 1./(radiusSpline{1}(1:1e-3:N{1}).*handles.conversionFactor);
                 assignin('base','newArcLength',dsdt{1}(1:1e-3:N{1}))
                 
@@ -136,20 +118,17 @@ if string(saveAnswer(1))=="Yes"
                 
                 handles.finalROIs(indexMT(i)).areasDisorg = finalAreasDisorg(i);
                 handles.finalROIs(indexMT(i)).areaMT = finalAreaMT(i);
-                %                 handles.finalROIs(indexMT(i)).generalCurvatures = finalGeneralCurvatures{i};
+                handles.finalROIs(indexMT(i)).generalCurvatures = finalGeneralCurvatures{i};
                 handles.finalROIs(indexMT(i)).individualCurvatures = finalPointCurvatures{i};
                 %             handles.finalROIs(indexMT(i)).density =
                 handles.finalROIs(indexMT(i)).eccentricity = finalEccentricity(i);
                 % ADD FIGURE WITH THE CURVATURE OR JUST SAVE THE FILE?
             catch ME
-                if DEBUG; disp(['WARNING: ',ME.identifier]); pause(); end
+                if DEBUG; disp(['WARNING: ',ME.identifier]); end
                 continue
-                delete(f)
             end
         end
-        if (isgraphics(f))
-            delete(f)
-        end
+        delete(f)
     else
         finalAreasDisorg = 0;
         finalAreaMT = 0;
@@ -174,27 +153,27 @@ if string(saveAnswer(1))=="Yes"
             % This gives me a matrix with the overlap of the
             % disorganisation with the axons. Rows: axon, Columns: MTs
             ratios = zeros(numel(numAxon),numel(numMT));
-            % %             'entering the cycles'
+%             'entering the cycles'
             for j = 1:numel(numAxon)
                 for k = 1:numel(numMT)
-                    % %                     'calculating bbox overlap'
+%                     'calculating bbox overlap'
                     ratios(j,k)=bboxOverlapRatio(handles.finalROIs(numAxon(j)).box,handles.finalROIs(numMT(k)).box,'Min');
                     if ratios(j,k)<0.05
                         ratios(j,k)=0;
                         continue
                     end
-                    % %                     'checking skeleton overlap'
+%                     'checking skeleton overlap'
                     if ~skeletonOverlap(handles.finalROIs(numAxon(j)).box,handles.finalROIs(numMT(k)).box,handles.finalROIs(numAxon(j)).skel,handles.finalROIs(numMT(k)).skel) %if skeleton overlap is 0
                         ratios(j,k)=0;
                     end
-                    % %                     'left skeleton overlap'
+%                     'left skeleton overlap'
                 end
             end
-            %             'before'
+%             'before'
             [~,indexes] = max(ratios); %gives me the max ratio per disorganisation (column)
             uniqueIndex = unique(indexes);
             for j = 1:numel(uniqueIndex)
-                %                 'calculating mdi'
+%                 'calculating mdi'
                 
                 disorgIndex = find(indexes==uniqueIndex(j));
                 finalAreaMT = 0;
@@ -204,22 +183,13 @@ if string(saveAnswer(1))=="Yes"
                 % MDI = perimeterMT/length(axon)
                 handles.finalROIs(numAxon(j)).MDI = finalAreaMT/handles.finalROIs(numAxon(j)).length;
             end
-            
-            
-            
-            
-            
-            
         catch
-            %             'I DIED'
-            delete(f)
+%             'I DIED'
             continue
         end
         
     end
-    if (isgraphics(f))
-        delete(f)
-    end
+    delete(f)
     checkPrint(handles.figure1,handles)
     %     finalName = [finalName '.mat'];
     tempROIs = handles.finalROIs;
@@ -239,47 +209,17 @@ if string(saveAnswer(1))=="Yes"
             finalStraightLengths{i-1} = handles.finalROIs(i).straightlineDistances.*conversionFactor;
             finalStraightPos{i-1} = handles.finalROIs(i).straightlineCoord;
             
-            straightLines = finalROIs(i).straightlines;
-            sizeStraightLines = length(straightLines);
-            distances=[];
-            segmentNumber = 1;
-            distanceIndex = 1;
-            k=1;
-            while k<=sizeStraightLines
-                try
-                    if (straightLines(k).rho == straightLines(k+1).rho) && (straightLines(k).theta == straightLines(k+1).theta)
-                        distances = [distances finalROIs(i).straightlineDistances(k)+finalROIs(i).straightlineDistances(k+1)];
-                        k=k+1;
-                    else
-                        distances = [distances finalROIs(i).straightlineDistances(k)];
-                    end
-                catch
-                    distances = [distances finalROIs(i).straightlineDistances(k)];
-                end
-                k=k+1;
-            end
-            
             if strcmp(handles.finalROIs(i).type,'MT disorganisation') % THESE ARE INDEXES, i don't need the conversion factor
-                %                 finalStraightnessIndex{i-1} = sum(handles.finalROIs(i).straightlineDistances)./handles.finalROIs(i).areaMT;
-                
-                
-                straightnessRatio = sum(distances)/sum(sum(finalROIs(indexMT(i)).skel))*100;
-                %                 sum(sum(finalROIs(indexMT(i)).skel))
-                % straightnessRatio = sum(tempROIs(roiIndex).straightlineDistances)/sum(sum(tempROIs(roiIndex).skel))*100
+                finalStraightnessIndex{i-1} = sum(handles.finalROIs(i).straightlineDistances)./handles.finalROIs(i).areaMT;
             else
-                %                 finalStraightnessIndex{i-1} = sum(handles.finalROIs(i).straightlineDistances)./handles.finalROIs(i).length;
-                totallength =tempROIs(i).length;
-                straightnessRatio = sum(distances)/totallength*100;
-                
+                finalStraightnessIndex{i-1} = sum(handles.finalROIs(i).straightlineDistances)./handles.finalROIs(i).length;
             end
-            finalStraightnessIndex{i-1} = straightnessRatio;
-            numberSegments = length(distances);
         catch
             continue
         end
     end
     
-    %     csvname = [finalName '.csv'];
+%     csvname = [finalName '.csv'];
     
     % cellROIs = struct2cell(handles.finalROIs);
     i=2; % Index for what the user wants
@@ -327,7 +267,7 @@ if string(saveAnswer(1))=="Yes"
     %or if you want the field names:
     %         xlswrite(xlsname, [fieldnames(finalResults), c]);
     
-    %     struct2csv(finalResults,csvname);
+%     struct2csv(finalResults,csvname);
     
     msgbox('The requested files have been saved.', 'Saved');
     
@@ -341,5 +281,3 @@ end
 % finalName = [finalName '.mat'];
 tempROIs = handles.finalROIs;
 save(finalName,'tempROIs'); % Saves everything into a file that can be opened later
-end
-% guidata(hObject,handles)

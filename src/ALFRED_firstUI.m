@@ -312,6 +312,7 @@ end
 guidata(hObject,handles);
 
 function previouspagebutton_Callback(hObject, ~, handles)
+handles.currentPage = handles.currentPage - 1;
 step = handles.currentPage * handles.nperpage;
 ending = step;
 beginning = ending - (handles.nperpage-1);
@@ -336,7 +337,7 @@ for z = beginning:ending
 end
 
 set(handles.nextpagebutton,'Enable','on');
-handles.currentPage = handles.currentPage - 1;
+
 if handles.currentPage == 1
     set(handles.previouspagebutton,'Enable','off');
 end

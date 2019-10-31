@@ -387,8 +387,8 @@ if get(handles.inverseImage,'Value')
         handles.image(:,:,i) = imcomplement(handles.image(:,:,i));
     end
     
-else
-    handles.image = handles.oldImage;
+% else
+%     handles.image = handles.oldImage;
 end
 
 try
@@ -461,8 +461,8 @@ if get(handles.inverseImage,'Value')
         handles.image(:,:,i) = imcomplement(handles.image(:,:,i));
     end
     
-else
-    handles.image = handles.oldImage;
+% else
+%     handles.image = handles.oldImage;
 end
 
 try

@@ -24,6 +24,7 @@ if string(saveAnswer(1))=="Yes"
     finalEccentricity = zeros(numel(indexMT),1);
     finalGeneralCurvatures = struct([]);
     finalPointCurvatures = struct([]);
+    finalArcLength = struct([]);
     
     % Retroadding the conversionFactor to all of the ROIs before
     i = 1;
@@ -129,7 +130,8 @@ if string(saveAnswer(1))=="Yes"
                 %                 resultsSpline = [];
                 %finalGeneralCurvatures{i} = 1./(resultsFourier.*handles.conversionFactor);
                 finalPointCurvatures{i} = 1./(radiusSpline{1}(1:1e-3:N{1}).*handles.conversionFactor);
-                assignin('base','newArcLength',dsdt{1}(1:1e-3:N{1}))
+                finalArcLength{i} =dsdt{1}(1:1e-3:N{1});
+%                 assignin('base','newArcLength',dsdt{1}(1:1e-3:N{1}))
                 
                 if DEBUG; disp('after calculations'); end
                 %                 totalCurvatures = [totalCurvatures handles.imageCurvature]; %#ok<AGROW>
@@ -138,13 +140,15 @@ if string(saveAnswer(1))=="Yes"
                 handles.finalROIs(indexMT(i)).areaMT = finalAreaMT(i);
                 %                 handles.finalROIs(indexMT(i)).generalCurvatures = finalGeneralCurvatures{i};
                 handles.finalROIs(indexMT(i)).individualCurvatures = finalPointCurvatures{i};
+                handles.finalROIs(indexMT(i)).arcLength = finalArcLength{i};
+                
                 %             handles.finalROIs(indexMT(i)).density =
                 handles.finalROIs(indexMT(i)).eccentricity = finalEccentricity(i);
                 % ADD FIGURE WITH THE CURVATURE OR JUST SAVE THE FILE?
             catch ME
                 if DEBUG; disp(['WARNING: ',ME.identifier]); pause(); end
-                continue
                 delete(f)
+                continue
             end
         end
         if (isgraphics(f))
@@ -160,6 +164,7 @@ if string(saveAnswer(1))=="Yes"
     %     finalName = [finalName '.mat'];
     tempROIs = handles.finalROIs;
     save(finalName,'tempROIs'); % Saves everything into a file that can be opened later
+    save('results/arcLength.mat','finalArcLength');
     
     
     
@@ -204,12 +209,7 @@ if string(saveAnswer(1))=="Yes"
                 % MDI = perimeterMT/length(axon)
                 handles.finalROIs(numAxon(j)).MDI = finalAreaMT/handles.finalROIs(numAxon(j)).length;
             end
-            
-            
-            
-            
-            
-            
+
         catch
             %             'I DIED'
             delete(f)

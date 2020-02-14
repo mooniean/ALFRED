@@ -131,7 +131,7 @@ if string(saveAnswer(1))=="Yes"
                 %finalGeneralCurvatures{i} = 1./(resultsFourier.*handles.conversionFactor);
                 finalPointCurvatures{i} = 1./(radiusSpline{1}(1:1e-3:N{1}).*handles.conversionFactor);
                 finalArcLength{i} =dsdt{1}(1:1e-3:N{1});
-%                 assignin('base','newArcLength',dsdt{1}(1:1e-3:N{1}))
+                %                 assignin('base','newArcLength',dsdt{1}(1:1e-3:N{1}))
                 
                 if DEBUG; disp('after calculations'); end
                 %                 totalCurvatures = [totalCurvatures handles.imageCurvature]; %#ok<AGROW>
@@ -209,7 +209,7 @@ if string(saveAnswer(1))=="Yes"
                 % MDI = perimeterMT/length(axon)
                 handles.finalROIs(numAxon(j)).MDI = finalAreaMT/handles.finalROIs(numAxon(j)).length;
             end
-
+            
         catch
             %             'I DIED'
             delete(f)
@@ -230,49 +230,68 @@ if string(saveAnswer(1))=="Yes"
     finalStraightnessIndex = cell(numel(handles.finalROIs)-1,1);
     %         handles.finalROIs(handles.imageIndex).straightlineDistances
     for i = 2:numel(handles.finalROIs)
+        
         try
             if ~isempty(handles.finalROIs(i).conversionFactor) % O Nuno editou isto, não tenho a certeza que esteja a fazer o que queres
                 conversionFactor = handles.finalROIs(i).conversionFactor;
             else
                 conversionFactor = handles.conversionFactor;
             end
+            
             finalStraightLengths{i-1} = handles.finalROIs(i).straightlineDistances.*conversionFactor;
             finalStraightPos{i-1} = handles.finalROIs(i).straightlineCoord;
             
-            straightLines = finalROIs(i).straightlines;
+            straightLines = handles.finalROIs(i).straightlines;
             sizeStraightLines = length(straightLines);
+            
             distances=[];
-            segmentNumber = 1;
-            distanceIndex = 1;
+            %             segmentNumber = 1;
+            %             distanceIndex = 1;
             k=1;
             while k<=sizeStraightLines
                 try
                     if (straightLines(k).rho == straightLines(k+1).rho) && (straightLines(k).theta == straightLines(k+1).theta)
-                        distances = [distances finalROIs(i).straightlineDistances(k)+finalROIs(i).straightlineDistances(k+1)];
-                        k=k+1;
+                        %                         temp = handles.finalROIs(i).straightlineDistances(k);
+                        values = [k];
+                        while (k+1<=sizeStraightLines && straightLines(k).rho == straightLines(k+1).rho) && (straightLines(k).theta == straightLines(k+1).theta)
+                            %                         distances = [distances finalROIs(i).straightlineDistances(k)+finalROIs(i).straightlineDistances(k+1)];
+                            %                             temp = temp + handles.finalROIs(i).straightlineDistances(k+1);
+                            
+                            k=k+1;
+                            values = [values k];
+                        end
+                        coordinates = [];
+                        for tempindex = values
+                            coordinates = [coordinates; straightLines(tempindex).point1;straightLines(tempindex).point2];
+                        end
+                        temp = checkDistance(coordinates(1,1),coordinates(end,1),coordinates(1,2),coordinates(end,2));
+                        distances = [distances temp];
                     else
-                        distances = [distances finalROIs(i).straightlineDistances(k)];
+                        distances = [distances handles.finalROIs(i).straightlineDistances(k)];
                     end
                 catch
-                    distances = [distances finalROIs(i).straightlineDistances(k)];
+                    distances = [distances handles.finalROIs(i).straightlineDistances(k)];
                 end
                 k=k+1;
             end
             
-            if strcmp(handles.finalROIs(i).type,'MT disorganisation') % THESE ARE INDEXES, i don't need the conversion factor
-                %                 finalStraightnessIndex{i-1} = sum(handles.finalROIs(i).straightlineDistances)./handles.finalROIs(i).areaMT;
-                
-                
-                straightnessRatio = sum(distances)/sum(sum(finalROIs(indexMT(i)).skel))*100;
-                %                 sum(sum(finalROIs(indexMT(i)).skel))
-                % straightnessRatio = sum(tempROIs(roiIndex).straightlineDistances)/sum(sum(tempROIs(roiIndex).skel))*100
-            else
-                %                 finalStraightnessIndex{i-1} = sum(handles.finalROIs(i).straightlineDistances)./handles.finalROIs(i).length;
-                totallength =tempROIs(i).length;
-                straightnessRatio = sum(distances)/totallength*100;
-                
-            end
+            %             if strcmp(handles.finalROIs(i).type,'MT disorganisation') % THESE ARE INDEXES, i don't need the conversion factor
+            %                 finalStraightnessIndex{i-1} = sum(handles.finalROIs(i).straightlineDistances)./handles.finalROIs(i).areaMT;
+            
+            
+            %                 straightnessRatio = sum(distances)/sum(sum(handles.finalROIs(indexMT(i)).path))*100;
+            %                 sum(sum(finalROIs(indexMT(i)).skel))
+            % straightnessRatio = sum(tempROIs(roiIndex).straightlineDistances)/sum(sum(tempROIs(roiIndex).skel))*100
+            %             else
+            %                 finalStraightnessIndex{i-1} = sum(handles.finalROIs(i).straightlineDistances)./handles.finalROIs(i).length;
+            %                 totallength =tempROIs(i).length;
+            %                 straightnessRatio = sum(distances)/totallength*100;
+            straightnessRatio = sum(distances)/sum(sum(tempROIs(i).path))*100;
+            handles.finalROIs(i).realDistances = distances;
+            
+            %             end
             finalStraightnessIndex{i-1} = straightnessRatio;
+            handles.finalROIs(i).straightnessRatio=straightnessRatio;
             numberSegments = length(distances);
         catch
             continue

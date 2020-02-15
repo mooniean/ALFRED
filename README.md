@@ -16,3 +16,11 @@ Beta testers: Andre Voelzmann (@avmann)
 
 ## Software Version
 Currently still not a public version, so 0.0.1
+
+## TO-DO
+
+- [ ] Executable file for windows users
+- [ ] Public release
+- [ ] Paper
+- [ ] Showing the results at the end rather than just saving them all on a .mat
+- [x] Make to-do list on github

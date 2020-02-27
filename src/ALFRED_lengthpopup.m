@@ -65,7 +65,7 @@ handles.totalpoints = 2;
 handles.numpeaks = 10;
 handles.linematrix = [];
 
-handles.nodenumber = [1 2];
+% handles.nodenumber = [1 2];
 handles.regiontype = 'Axon';
 handles.flag = 1;
 handles.nodenumber = [];

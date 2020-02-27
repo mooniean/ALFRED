@@ -1,4 +1,4 @@
-function [donelines,xy_long] = houghTest(skel,numpeaks)
+function [donelines,xy_long, donepath,donepoints,distances] = houghTest(skel,numpeaks,recurse)
 % Input: Image skeleton and number of peaks.
 % Output: The straightest lines in the skeleton and coordinates of the longest line.
 % Using a Hough Transform, there is a first parametrisation of the skeleton.
@@ -7,7 +7,7 @@ function [donelines,xy_long] = houghTest(skel,numpeaks)
 % All of this is plotted on the display presenting the skeleton.
 
 
-[H,T,R] = hough(skel,'RhoResolution',8); % default RhoResolution is 1
+[H,T,R] = hough(skel,'RhoResolution',3); % default RhoResolution is 1
 
 
 
@@ -41,12 +41,16 @@ graph = binaryImageGraph(skel);
 % WHENEVER SOME LINES ARE DONE, BECOME ZERO
 % iF POINTS NOT IN TEMPORARY MATRIX, SKIP
 
-figure, imshow(skel)
+% if ~recurse
+% figure, imshow(skel)
+% end
 hold on
 max_len = 0;
 donepath = [];
 donepoints =[];
 donelines = [];
+xy_long = [];
+distances = [];
 for k = 1:length(lines)
     
     oldxy = [lines(k).point1; lines(k).point2];
@@ -63,12 +67,13 @@ for k = 1:length(lines)
     p = [lines(k).rho lines(k).theta];
     flag = true;
 %     donepoints
-    [shortest,endNumber,~] = evaluateShortest(graph,[nodenumber1 nodenumber2],nodenumber1,[1]);
+    [shortest,endNumber,sizePath] = evaluateShortest(graph,[nodenumber1 nodenumber2],nodenumber1,[1]);
     if sum([donepath==nodenumber2 donepath==nodenumber1])>0
         if (length(intersect(shortest,donepath))/length(shortest))>0.1
             continue
         end
     end
+    distances = [distances; sizePath];
     donepoints = [donepoints endNumber];
     donepath = unique([donepath shortest]);
     plotx=graph.Nodes(shortest(1,:),:).x;
@@ -80,7 +85,7 @@ for k = 1:length(lines)
         donelines = [donelines lines(k)];
         % Plot beginnings and ends of lines
         plot(xy(1,1),xy(1,2),'x','LineWidth',2,'Color','yellow');
-        plot(xy(2,1),xy(2,2),'x','LineWidth',2,'Color','red'); pause 
+        plot(xy(2,1),xy(2,2),'x','LineWidth',2,'Color','red'); 
         
         % Determine the endpoints of the longest line segment
         len = norm(lines(k).point1 - lines(k).point2);
@@ -93,19 +98,22 @@ for k = 1:length(lines)
     end
 end
 % 
-if length(donepath)/size(graph.Nodes,1)<1
+if length(donepath)/size(graph.Nodes,1)<1 && ~isempty(donepath)
     if length(donepoints)<numpeaks
         tempGraph = rmnode(graph,donepath);
         tempPath=zeros(size(skel));
         for i = 1:length(tempGraph.Nodes.x)
             tempPath(tempGraph.Nodes.y(i),tempGraph.Nodes.x(i))=1;
         end
-        [templines,~] = houghTest(tempPath,numpeaks);
+        [templines,~,tempdonepath,tempdonepoints,tempdistances] = houghTest(tempPath,numpeaks,true);
         donelines = [donelines templines];
+        donepath = unique([donepath tempdonepath]);
+        donepoints = [donepoints tempdonepoints];
+        distances = [distances; tempdistances];
     end
 end
 
 % highlight the longest line segment
 % plot(xy_long(:,1),xy_long(:,2),'LineWidth',2,'Color','red');
-hold off
+% hold off
 end

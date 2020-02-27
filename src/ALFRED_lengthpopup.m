@@ -423,7 +423,7 @@ try
     for i = 1:length(handles.bigx)
         handles.finalPath(handles.bigy(i),handles.bigx(i))=1;
     end
-    [handles.lines,handles.longLine] = houghTest(handles.finalPath,handles.numpeaks);
+    [handles.lines,handles.longLine,handles.donepath,~,linesDist] = houghTest(handles.finalPath,handles.numpeaks,false);
     
     % Plot and show the user The size and how many points were user
     % selected
@@ -432,8 +432,8 @@ try
     hold on; plot(handles.bigx,handles.bigy,'b.','LineWidth', 1); plot([handles.finalX],[handles.finalY],'g.'); hold off;
     
     % Average Line Values
-    avg = 0;
-    linesDist = [];
+%     avg = 0;
+%     linesDist = [];
     linesCoord = cell(length(handles.lines),2);
     for i = 1:length(handles.lines)
 
@@ -441,15 +441,15 @@ try
         x2=handles.lines(i).point2(1);
         y1=handles.lines(i).point1(2);
         y2=handles.lines(i).point2(2);
-
-        distancePoints = checkDistance(x1,x2,y1,y2);
-        avg = avg + distancePoints;
-        linesDist = [linesDist distancePoints]; %#ok<AGROW>
+% 
+%         distancePoints = checkDistance(x1,x2,y1,y2);
+%         avg = avg + distancePoints;
+%         linesDist = [linesDist distancePoints]; %#ok<AGROW>
         linesCoord{i,1}= [x1 y1];
         linesCoord{i,2}= [x2 y2];
         
     end
-    avg = avg/length(handles.lines);
+%     avg = avg/length(handles.lines);
 
     handles.output = {handles.regiontype, handles.finalPath, handles.totalSize,handles.lines,handles.longLine,handles.bigx,handles.bigy,linesDist,linesCoord};
     set(handles.saveclosebutton,'Enable','on');

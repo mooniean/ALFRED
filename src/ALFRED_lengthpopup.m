@@ -62,7 +62,7 @@ handles.originalImage = varargin{2}; % Crop of the original image
 handles.g = binaryImageGraph(handles.image);
 handles.amountofpoints = 1;
 handles.totalpoints = 2;
-handles.numpeaks = 10;
+handles.numpeaks = 20;
 handles.linematrix = [];
 
 % handles.nodenumber = [1 2];

@@ -7,7 +7,7 @@ function [donelines,xy_long, donepath,donepoints,distances] = houghTest(skel,num
 % All of this is plotted on the display presenting the skeleton.
 
 
-[H,T,R] = hough(skel,'RhoResolution',3); % default RhoResolution is 1
+[H,T,R] = hough(skel,'RhoResolution',2); % default RhoResolution is 1
 
 
 
@@ -23,7 +23,7 @@ function [donelines,xy_long, donepath,donepoints,distances] = houghTest(skel,num
 % size(H)
 
 
-P = houghpeaks(H,numpeaks,'Threshold',ceil(0.3*max(H(:))));% default Threshold is half numpeaks, 15,'NHoodSize'
+P = houghpeaks(H,numpeaks);% default Threshold is half numpeaks, 15,'NHoodSize'ceil(0.3*max(H(:)))
 
 % x = T(P(:,2));
 % y = R(P(:,1));
@@ -41,9 +41,9 @@ graph = binaryImageGraph(skel);
 % WHENEVER SOME LINES ARE DONE, BECOME ZERO
 % iF POINTS NOT IN TEMPORARY MATRIX, SKIP
 
-% if ~recurse
-% figure, imshow(skel)
-% end
+if ~recurse
+figure, imshow(skel)
+end
 hold on
 max_len = 0;
 donepath = [];
@@ -67,14 +67,14 @@ for k = 1:length(lines)
     p = [lines(k).rho lines(k).theta];
     flag = true;
 %     donepoints
-    [shortest,endNumber,sizePath] = evaluateShortest(graph,[nodenumber1 nodenumber2],nodenumber1,[1]);
+    [shortest,~,sizePath] = evaluateShortest(graph,[nodenumber1 nodenumber2],nodenumber1,[1]);
     if sum([donepath==nodenumber2 donepath==nodenumber1])>0
         if (length(intersect(shortest,donepath))/length(shortest))>0.1
             continue
         end
     end
     distances = [distances; sizePath];
-    donepoints = [donepoints endNumber];
+    donepoints = [donepoints k];
     donepath = unique([donepath shortest]);
     plotx=graph.Nodes(shortest(1,:),:).x;
     ploty=graph.Nodes(shortest(1,:),:).y;
@@ -99,13 +99,13 @@ for k = 1:length(lines)
 end
 % 
 if length(donepath)/size(graph.Nodes,1)<1 && ~isempty(donepath)
-    if length(donepoints)<numpeaks
+    if length(donelines)<numpeaks
         tempGraph = rmnode(graph,donepath);
         tempPath=zeros(size(skel));
         for i = 1:length(tempGraph.Nodes.x)
             tempPath(tempGraph.Nodes.y(i),tempGraph.Nodes.x(i))=1;
         end
-        [templines,~,tempdonepath,tempdonepoints,tempdistances] = houghTest(tempPath,numpeaks,true);
+        [templines,~,tempdonepath,tempdonepoints,tempdistances] = houghTest(tempPath,(numpeaks-length(donelines)),true);
         donelines = [donelines templines];
         donepath = unique([donepath tempdonepath]);
         donepoints = [donepoints tempdonepoints];

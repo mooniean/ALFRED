@@ -7,7 +7,7 @@ function [donelines,xy_long, donepath,donepoints,distances] = houghTest(skel,num
 % All of this is plotted on the display presenting the skeleton.
 
 
-[H,T,R] = hough(skel,'RhoResolution',2); % default RhoResolution is 1
+[H,T,R] = hough(skel,'RhoResolution',1); % default RhoResolution is 1
 
 
 
@@ -31,7 +31,7 @@ P = houghpeaks(H,numpeaks);% default Threshold is half numpeaks, 15,'NHoodSize'c
 
 
 % Length of lines gives us the number of merged line segments found
-lines = houghlines(skel,T,R,P,'FillGap',5,'MinLength',50);
+lines = houghlines(skel,T,R,P,'FillGap',5,'MinLength',10);
 
 
 %NOT THE EUCLIDEAN BETWEEN POINTS BUT THE ACTUAL PATH FROM SKEL - PERHAPS

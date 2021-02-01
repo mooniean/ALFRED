@@ -452,6 +452,7 @@ try
 %     avg = avg/length(handles.lines);
 
     handles.output = {handles.regiontype, handles.finalPath, handles.totalSize,handles.lines,handles.longLine,handles.bigx,handles.bigy,linesDist,linesCoord};
+    handles.X
     set(handles.saveclosebutton,'Enable','on');
 catch EX
     warndlg('The selected points are not enough for a continuous path.')

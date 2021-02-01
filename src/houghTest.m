@@ -9,6 +9,7 @@ function [donelines,xy_long, donepath,donepoints,distances] = houghTest(skel,num
 
 [H,T,R] = hough(skel,'RhoResolution',1); % default RhoResolution is 1
 
+numpeaks
 
 
 % old = H;
@@ -41,9 +42,9 @@ graph = binaryImageGraph(skel);
 % WHENEVER SOME LINES ARE DONE, BECOME ZERO
 % iF POINTS NOT IN TEMPORARY MATRIX, SKIP
 
-if ~recurse
-figure, imshow(skel)
-end
+% if ~recurse
+% figure, imshow(skel)
+% end
 hold on
 max_len = 0;
 donepath = [];
@@ -51,6 +52,7 @@ donepoints =[];
 donelines = [];
 xy_long = [];
 distances = [];
+disp('Calculating Hough Transforms')
 for k = 1:length(lines)
     
     oldxy = [lines(k).point1; lines(k).point2];
@@ -59,12 +61,13 @@ for k = 1:length(lines)
     [x1,y1,nodenumber1] = checkCoordinates(oldxy(1,1),oldxy(1,2),graph.Nodes,20);
     [x2,y2,nodenumber2] = checkCoordinates(oldxy(2,1),oldxy(2,2),graph.Nodes,20);
     xy = [x1 y1; x2 y2];
-    nodenumber = [nodenumber1 nodenumber2];
+%     nodenumber = [nodenumber1 nodenumber2];
    
     x = xy(:,1);
     y = xy(:,2);
 
     p = [lines(k).rho lines(k).theta];
+    
     flag = true;
 %     donepoints
     [shortest,~,sizePath] = evaluateShortest(graph,[nodenumber1 nodenumber2],nodenumber1,[1]);
@@ -73,7 +76,7 @@ for k = 1:length(lines)
             continue
         end
     end
-    distances = [distances; sizePath];
+    distances = [distances; sizePath]; %#ok<*AGROW>
     donepoints = [donepoints k];
     donepath = unique([donepath shortest]);
     plotx=graph.Nodes(shortest(1,:),:).x;
@@ -112,6 +115,8 @@ if length(donepath)/size(graph.Nodes,1)<1 && ~isempty(donepath)
         distances = [distances; tempdistances];
     end
 end
+
+disp('Finished HT Calc')
 
 % highlight the longest line segment
 % plot(xy_long(:,1),xy_long(:,2),'LineWidth',2,'Color','red');

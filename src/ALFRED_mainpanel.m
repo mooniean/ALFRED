@@ -495,18 +495,20 @@ else
     try
         %         imshow(handles.image(:,:,handles.channelChoice));
         handles.region = handles.image(:,:,handles.channelChoice);
-        handles = virtualising(handles);
-        %virtualisationbutton_Callback(@virtualisationbutton, 0, handles);
-        
-        if handles.imagePanel
-            applygrayscalethreshold_Callback(@applygrayscalethreshold, 0, handles);
-            
-        end
     catch
         imshow(handles.image)
     end
 end
 
+%% This section was inside the try
+handles = virtualising(handles);
+%virtualisationbutton_Callback(@virtualisationbutton, 0, handles);
+
+if handles.imagePanel
+    applygrayscalethreshold_Callback(@applygrayscalethreshold, 0, handles);
+    
+end
+%%
 checkPrint(handles.figure1,handles)
 
 if handles.currentImage == handles.totalNumberImages || handles.currentImage == length(handles.imageGroup)
